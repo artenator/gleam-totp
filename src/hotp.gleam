@@ -132,7 +132,7 @@ pub fn valid_hotp_with_options(
 ) -> Result(#(Option(Bool), Option(Int)), HotpError) {
   let token_parsed = parse_token(token)
   let secret_parsed = parse_secret(secret)
-  let valid_hotp_options = echo to_pot_valid_hotp_options(options)
+  let valid_hotp_options = to_pot_valid_hotp_options(options)
   rescue(fn() {
     token_parsed
     |> pot_valid_hotp_with_options(secret_parsed, valid_hotp_options)
