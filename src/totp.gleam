@@ -1,6 +1,10 @@
+import common.{
+  type DigestMethod, type Secret, type Token, SHA, SHA256, SHA384, SHA512,
+  parse_secret, parse_token,
+}
 import gleam/bit_array
 import gleam/erlang.{type Crash, rescue}
-import gleam/erlang/atom.{type Atom, type FromStringError}
+import gleam/erlang/atom.{type Atom}
 import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -12,16 +16,6 @@ pub opaque type TotpError {
   StringError
 }
 
-pub type Secret {
-  StringSecret(String)
-  BitArraySecret(BitArray)
-}
-
-pub type Token {
-  StringToken(String)
-  BitArrayToken(BitArray)
-}
-
 pub opaque type TotpOption {
   Addwindow(window: Int)
   DigestMethod(method: Atom)
@@ -31,7 +25,7 @@ pub opaque type TotpOption {
   Window(window: Int)
 }
 
-pub type TotpOptions {
+pub opaque type TotpOptions {
   TotpOptions(
     addwindow: Option(Int),
     digest_method: Option(String),
@@ -40,13 +34,6 @@ pub type TotpOptions {
     token_length: Option(Int),
     window: Option(Int),
   )
-}
-
-pub type DigestMethod {
-  SHA
-  SHA256
-  SHA384
-  SHA512
 }
 
 pub fn default_options() {
@@ -124,28 +111,6 @@ fn to_pot_valid_totp_options(from options: TotpOptions) {
   |> option.values
 }
 
-// pub fn totp_default_options() -> Result(List(TotpOption), FromStringError) {
-//   let digest_method = create_digest_method("sha")
-//   Ok([Addwindow(0), digest_method])
-// }
-
-fn parse_secret(secret: Secret) {
-  case secret {
-    BitArraySecret(ba) -> base32_encode(ba)
-    StringSecret(s) -> s |> bit_array.from_string |> base32_encode
-  }
-}
-
-fn parse_token(token: Token) {
-  case token {
-    BitArrayToken(ba) -> ba
-    StringToken(s) -> s |> bit_array.from_string
-  }
-}
-
-@external(erlang, "pot_base32", "encode")
-pub fn base32_encode(data: BitArray) -> BitArray
-
 @external(erlang, "pot", "totp")
 fn pot_totp(secret: BitArray) -> BitArray
 
@@ -211,10 +176,4 @@ pub fn totp_with_options(
   })
   |> result.map_error(ErlangCrash)
   |> result.try(result.map_error(_, fn(_) { StringError }))
-}
-
-pub fn main() -> _ {
-  io.println("Hello from totp!")
-  echo StringSecret("hi") |> totp_with_options(default_options())
-  echo StringSecret("hi") |> totp
 }
